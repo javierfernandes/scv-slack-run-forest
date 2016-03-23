@@ -1,15 +1,17 @@
 var fs = require('fs');
 var q = require('q');
 
-var Canvas = require('canvas')
-	  , Image = Canvas.Image
+var Canvas = require('canvas');
+var	Image = Canvas.Image;
 
-var users = [
-	{ userId: 'U03C73RAE', position : [10, 10], image : "U03C73RAE" }
-];
+var width = 600;
+var height = 756;
+
+
+var users = [];
 
 function createImage() {
-	var canvas = new Canvas(600, 756)
+	var canvas = new Canvas(width, height)
 	var ctx = canvas.getContext('2d');
 
 	fs.readFile(__dirname + '/forest.png', function(err, squid) {
@@ -86,6 +88,15 @@ function connectWebSocket(url) {
 
   ws.on('open', function() {
       console.log('Connected');
+
+      var CronJob = require('cron').CronJob;
+	  new CronJob('* */30 * * * *', function() {
+	  	  users.forEach(function(u) { u.moved = false })
+	  	  createImage();
+	  	  var message = "Tienen 30 minutos para hacer su movimiento !";
+		  ws.send(JSON.stringify({ channel: channelId, id: 1, text: message, type: "message" }));
+	  }, null, true, 'America/Los_Angeles');
+
   });
 
   ws.on('message', function(message) {
@@ -95,27 +106,40 @@ function connectWebSocket(url) {
 
       if (message.channel === channelId && message.type === 'message' && message.user !== userId) {
       	if (message.text === "arriba" || message.text === "abajo" || message.text === "izquierda" ||message.text === "derecha") {
-      		 console.log("moviendo a " + message.user + " ARRIBA");
-
       		 var moved = false;
       		 users.forEach(function(u) {
       		 	if (u.userId === message.user) {
-      		 		var delta = 50;
-      		 		var deltaX = (message.text === "izquierda") ? delta*-1 : ((message.text === "derecha") ? delta : 0);
-      		 		var deltaY = (message.text === "arriba") ? delta*-1 : ((message.text === "abajo") ? delta : 0);
-      		 		
-					u.position[0] = u.position[0] + deltaX;
-      		 		u.position[1] = u.position[1] + deltaY;
-      		 		moved = true
+      		 		if (u.moved) {
+      		 			var text = "Ya gastaste tu turno @" + message.user + ". Aguantá la capocha!"
+      		 			ws.send(JSON.stringify({ channel: channelId, id: 1, text: text, type: "message" }));
+      		 			moved = true
+      		 		}
+      		 		else {
+	      		 		var delta = 50;
+	      		 		var deltaX = (message.text === "izquierda") ? delta*-1 : ((message.text === "derecha") ? delta : 0);
+	      		 		var deltaY = (message.text === "arriba") ? delta*-1 : ((message.text === "abajo") ? delta : 0);
+	      		 		
+						u.position[0] = u.position[0] + deltaX;
+	      		 		u.position[1] = u.position[1] + deltaY;
+
+	      		 		u.moved = true
+      		 		}
       		 	}
       		 });
       		 if (!moved) {
-      		 	users.push({userId: message.user, position : [0,0], image: "U03C73RAE"})
+      		 	users.push({userId: message.user, position : randomPosition(), image: "U03C73RAE"})
+      		 	u.moved = true
       		 }
-      	  	 createImage();
       	}
       }
   });
+}
+
+function randomPosition() { return [randomBetween(0, width) , randomBetween(0, height)]}
+
+function randomBetween(start, end) {
+	// TODO: round to 50 which is the steps (delta). I mean the grid cell size
+	return Math.floor(Math.random() * end) + start;
 }
 
 function sendFile() {
