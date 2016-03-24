@@ -31,7 +31,7 @@ function drawUsers(game, ctx, cb) {
 	var promises = [];
 	game.players.forEach(function(player) {
 		var d = q.defer();
-		fs.readFile(path.join(__dirname, player.getImageName() + '.png'), function(err, squid) {
+		fs.readFile(path.join(__dirname, player.getImageName()), function(err, squid) {
 			if (err) throw err;
 			var img = new Image()
 			img.src = squid;
