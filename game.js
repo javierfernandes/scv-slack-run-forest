@@ -39,7 +39,7 @@ var Game = {
 
 function Player(userId) {
 	this.userId = userId;
-	this.position = randomPosition();
+	this.position = Position.random();
 	this.movedThisRound = false;
 	this.getImageName = function() { return "U03C73RAE" }
 	this.startRound = function() {
@@ -54,13 +54,15 @@ function Player(userId) {
 function Position(x, y) {
 	this.x = x
 	this.y = y
-	this.moveRight = 	function() { this.x += cellSize }
-	this.moveLeft = 	function() { this.x -= cellSize }
-	this.moveUp = 		function() { this.x -= cellSize }
-	this.moveDown = 	function() { this.x += cellSize }
+	cellSize = Game.cellSize
+	
+	this.moveRight 	= function() { this.x += cellSize }
+	this.moveLeft 	= function() { this.x -= cellSize }
+	this.moveUp 	= function() { this.y -= cellSize }
+	this.moveDown 	= function() { this.y += cellSize }
 }
 Position.random = function() {
-	return [Position.randomBetween(0, Game.width) , Position.randomBetween(0, Game.height)]
+	return new Position(this.randomBetween(0, Game.width), this.randomBetween(0, Game.height))
 }
 Position.randomBetween = function(start, end) {
 	// TODO: round to 50 which is the steps (delta). I mean the grid cell size
