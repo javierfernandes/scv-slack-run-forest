@@ -5,6 +5,7 @@ var drawing = require('./drawing')
 
 
 var Game = {
+	roundDuration : 5, // minutes
 	roundNumber : 1,
 	players : [],
 	cellSize : 50,

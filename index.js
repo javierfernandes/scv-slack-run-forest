@@ -32,12 +32,11 @@ function connectWebSocket(url) {
 
   ws.on('open', function() {
       console.log('Connected');
-      var turno = 5
 
-      sendMessage(ws, "Hola ! Arrancamos un juego ! Los turnos son cada " + turno + " minutos!");
+      sendMessage(ws, "Hola ! Arrancamos un juego ! Los turnos son cada " + game.game.roundDuration + " minutos!");
       drawing.createImage(game.game)
         .then(function() {
-      		return sendFile("Turno " + game.game.roundNumber);	
+      		return sendFile("Round " + game.game.roundNumber);	
       	})
       	.done()
 
