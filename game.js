@@ -1,6 +1,11 @@
+var sutils = require('./slack-utils')
+var sendMessage = sutils.sendMessage
+var sendFile = sutils.sendFile
+var drawing = require('./drawing')
 
 
 var Game = {
+	roundNumber : 1,
 	players : [],
 	cellSize : 50,
 	width : 600,
@@ -12,8 +17,15 @@ var Game = {
 		derecha: function(ws, message) { doWithPlayer(ws, message, function(player) { 	player.moveRight() 	}) }
 	},
 	doWithPlayer : function(ws, message, cb) {
-		cb(getOrCreatePlayer(message.user))
-		// maybe we could add a reaction to the user's message to indicate that the bot has executed the action (?)
+		var p = getOrCreatePlayer(message.user)
+		if (p.movedThisRound) {
+			sendMessage(ws, "Ya gastaste tu turno <@" + message.user + ">. Aguantá la capocha!")
+		}
+		else {
+			// maybe we could add a reaction to the user's message to indicate that the bot has executed the action (?) 
+			cb()
+		}
+
 	},
 	getOrCreatePlayer : function(id) {
 		var p = getPlayer(id)
@@ -27,12 +39,13 @@ var Game = {
   		return undefined;
 	},
 	createPlayer : function(id) {
-		var p = new Player(message.user)
-		players.push(p)
+		var p = new Player(id)
+		this.players.push(p)
 		return p
 	},
 	startRound : function() {
-		players.forEach(function(p) { p.startRound() });
+		this.roundNumber += 1
+		this.players.forEach(function(p) { p.startRound() })
 	}
 }
 
@@ -73,44 +86,19 @@ Position.randomBetween = function(start, end) {
 
 function processTurn(ws, turno) {
 	Game.startRound()
-	drawing.createImage(game)
+	drawing.createImage(Game)
 	  .then(function() {
-      	return sendFile();
-      }).then(function() {
-    	sendMessage("Nuevo turno ! Tienen " + turno + " minutos para hacer su movimiento !")    	
-    });
+      	return sendFile("Turno " + Game.roundNumber);
+      })
+      .then(function() {
+    	return sendMessage(ws, "Nuevo turno ! Tienen " + turno + " minutos para hacer su movimiento !")    	
+      })
+      .done();
 }
 
 function processMessage(ws, message) {
 	if (Game.commands[message.text]) {
-
 		Game.commands[message.text](ws, message);
-
-  		 var moved = false;
-  		 game.users.forEach(function(u) {
-  		 	if (u.userId === message.user) {
-  		 		if (u.moved) {
-  		 			var text = "Ya gastaste tu turno @" + message.user + ". Aguantá la capocha!"
-  		 			ws.send(JSON.stringify({ channel: channelId, id: 1, text: text, type: "message" }));
-  		 			moved = true
-  		 		}
-  		 		else {
-      		 		var delta = 50;
-      		 		var deltaX = (message.text === "izquierda") ? delta*-1 : ((message.text === "derecha") ? delta : 0);
-      		 		var deltaY = (message.text === "arriba") ? delta*-1 : ((message.text === "abajo") ? delta : 0);
-      		 		
-					u.position[0] = u.position[0] + deltaX;
-      		 		u.position[1] = u.position[1] + deltaY;
-
-      		 		u.moved = true
-  		 		}
-  		 	}
-  		 });
-  		 if (!moved) {
-  		 	var u = {userId: message.user, position : randomPosition(), image: "U03C73RAE"};
-  		 	users.push(u);
-  		 	u.moved = true;
-  		 }
   	}
 }
 
@@ -118,5 +106,6 @@ function processMessage(ws, message) {
 module.exports = {
 	processTurn : processTurn,
 	processMessage : processMessage,
-	Position : Position
+	Position : Position,
+	game : Game
 };

@@ -7,7 +7,7 @@ var q = require('q');
 function createImage(game) {
 	var d = q.defer();
 
-	var canvas = new Canvas(width, height);
+	var canvas = new Canvas(game.width, game.height);
 	var ctx = canvas.getContext('2d');
 
 	fs.readFile(__dirname + '/forest.png', function(err, squid) {
@@ -29,42 +29,41 @@ function createImage(game) {
 
 function drawUsers(game, ctx, cb) {
 	var promises = [];
-	game.users.forEach(function(u) {
+	game.players.forEach(function(player) {
 		var d = q.defer();
-		fs.readFile(path.join(__dirname, u.image + '.png'), function(err, squid) {
+		fs.readFile(path.join(__dirname, player.getImageName() + '.png'), function(err, squid) {
 			if (err) throw err;
-			var img = new Image();
+			var img = new Image()
 			img.src = squid;
-			ctx.drawImage(img, u.position[0], u.position[1], img.width, img.height);
-			d.resolve();
+			ctx.drawImage(img, player.position.x, player.position.y, img.width, img.height);
+			d.resolve()
 		});
-		promises.push(d.promise);
+		promises.push(d.promise)
 	});
 
 	q.all(promises).then(function() {
-		cb();
+		return cb()
 	}).done();
 
 }
 
 function saveOut(canvas) {
-	var d = q.defer();
-	var out = fs.createWriteStream(__dirname + '/output.png');
-	var stream = canvas.pngStream();
+	var d = q.defer()
+	var out = fs.createWriteStream(__dirname + '/output.png')
+	var stream = canvas.pngStream()
 
 	stream.on('data', function(chunk) {
-	  out.write(chunk);
+	  out.write(chunk)
 	});
 
 	stream.on('end', function() {
-	  console.log('saved png');
-
+	  console.log('Saved png');
 	  out.end(function() {
-	  	d.resolve();
-	  });
-	});
+	  	d.resolve()
+	  })
+	})
 
-	return d.promise;
+	return d.promise
 }
 
 
